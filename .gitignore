@@ -1,0 +1,5 @@
+# Exclure le dossier de dépendances
+/node_modules/
+
+# Exclure le dossier de d'images
+/images/
