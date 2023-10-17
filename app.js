@@ -1,5 +1,5 @@
 const express = require('express');
-
+require('dotenv').config();
 
 const mongoose = require('mongoose');
 /*mongoose.connect('mongodb+srv://jean:WlVqOJ2QGmzvbH9y@cluster0.novz9xo.mongodb.net/?retryWrites=true&w=majority',
@@ -27,22 +27,24 @@ app.use((req, res, next) => {
 
 
 const path = require('path');
-app.use('/images', express.static(path.join(__dirname, 'images')));
-const stuffRoutes = require('./routes/stuff');
+app.use('/users/images', express.static(path.join(__dirname, 'users/images')));
+const stuffRoutes = require('./users/routes/stuff');
 app.use('/api/stuff', stuffRoutes);
-const usersRoutes = require('./routes/users');
+const usersRoutes = require('./users/routes/users');
 app.use('/auth', usersRoutes);
-const vendorRoute = require('./routes/vendor');
+const vendorRoute = require('./users/routes/vendor');
 app.use('/vendor', vendorRoute);
-const houseRoute = require('./routes/houses');
+const houseRoute = require('./users/routes/houses');
 app.use('/houses', houseRoute);
-const authorizationRoute = require('./routes/index');
+const authorizationRoute = require('./users/routes/index');
 app.use('/authorization', authorizationRoute);
-const agentsRoute = require('./routes/agents');
+const agentsRoute = require('./users/routes/agents');
 app.use('/agents', agentsRoute);
-const mailingRoute = require('./routes/mailing');
+const spRoute = require('./users/routes/specials');
+app.use('/options', spRoute);
+const mailingRoute = require('./users/routes/mailing');
 app.use('/mailing', mailingRoute);
-const messageRoute = require('./routes/messages');
+const messageRoute = require('./users/routes/messages');
 app.use('/messages', messageRoute);
 
 module.exports = app;
