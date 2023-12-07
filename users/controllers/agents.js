@@ -11,12 +11,6 @@ const connection = mysql.createConnection({
 exports.getAgents = async (req, res, next) => {
     if (req.query.filtres) {
         let mesFiltres = JSON.parse(req.query.filtres)
-        /*
-          elder: '2023-08-05',
-  nbProp: 2,
-  type: null,
-  localisation: 2,
-  limit: 0*/
         let arrayFiltres = [
             mesFiltres.elder && parseDateOrString(mesFiltres.elder) ?
                 `date(vendor.date_creation) <= date('${mesFiltres.elder}')` : '',
@@ -103,6 +97,24 @@ exports.getAgentInfos = (req, res, next) => {
     console.log('****************** RAU')
     console.log(req.auth.userId)
     connection.query(query, [req.auth.userId], (error, results) => {
+        if (error) {
+            console.log(error)
+            return res.status(500).json({ error: error });
+        }
+        console.log(results)
+        return res.status(200).json({ datas: results });
+    });
+}
+
+exports.getAgentPlanning = (req, res, next) => {
+    const query = `SELECT url, userId as id, name, vendoroptions.vendor, vendor.date_creation, count(houses.id) as nbhouses
+    FROM vendor
+    INNER JOIN vendoroptions ON vendor.typevendor = vendoroptions.id
+    INNER JOIN users ON users.id = vendor.idvendor
+    INNER JOIN houses ON houses.userId = vendor.idvendor
+    where houses.id =  ?`
+    
+    connection.query(query, [req.params.id], (error, results) => {
         if (error) {
             console.log(error)
             return res.status(500).json({ error: error });

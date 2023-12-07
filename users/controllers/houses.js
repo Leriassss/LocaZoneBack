@@ -8,10 +8,8 @@ const connection = mysql.createConnection({
     database: process.env.DATABASE_USER
 })
 
+const dirImg = "users/images/houses/"
 exports.postHouse = (req, res, next) => {
-    console.log('--------------------------- REQ --------------------------')
-    console.log(req.auth)
-    console.log('----------------------------------------------------------')
     const myErrors = []
     if (req.file.facade != '' && req.file.douche.length > 0
         && req.file.chambre.length > 0 && req.file.cuisine.length > 0) {
@@ -29,7 +27,6 @@ exports.postHouse = (req, res, next) => {
                 connection.rollback(() => {
                     myErrors.push(error)
                     return res.status(500).json({ message: error })
-                    throw error
                 })
             }
             console.log('-------------------- 2 ')
@@ -64,7 +61,6 @@ exports.postHouse = (req, res, next) => {
                 if (err) {
                     myErrors.push(err)
                     return res.status(500).json({ message: err })
-                    throw err;
                 }
                 connection.query(insertHouseQuery, values, (errorIHQ, results) => {
                     if (errorIHQ) {
@@ -103,7 +99,7 @@ exports.postHouse = (req, res, next) => {
                                         console.log(i)
                                         console.log('-------------------------------------------------')
                                         saves.push('("' +
-                                            `${req.protocol}://${req.get('host')}/images/houses/${element2[i]}",` +
+                                            `${element2[i]}",` +
                                             '(select id from typefeatures where features = \'' + id + '\'),' +
                                             results.insertId + ',' +
                                             element[i] + ')'
@@ -129,39 +125,58 @@ exports.postHouse = (req, res, next) => {
                                         throw errorIHFQ
                                     }
                                     else {
-                                        const saves2 = []
-                                        const insertOptionsHouseQuery = 'insert into optionshouse (optionshouse,idhouse) values '
-                                        for (var id in req.body.accessoires) {
-                                            const element = req.body.accessoires[id]
-                                            saves2.push('(' + element + ',' + results.insertId + ')'
-                                            )
-
-                                        }
-                                        const query2 = saves2.join(',')
-                                        console.log('................... SAVES 2..........................')
-                                        console.log(insertOptionsHouseQuery + query2)
-                                        console.log('....................................................')
-                                        connection.query(insertOptionsHouseQuery + query2, (errorIOHQ, results3) => {
-                                            if (errorIOHQ) {
-                                                myErrors.push(errorIOHQ)
-                                                throw errorIOHQ
+                                        if(req.body.accessoires.length > 0){
+                                            const saves2 = []
+                                            const insertOptionsHouseQuery = 'insert into optionshouse (optionshouse,idhouse) values '
+                                            console.log('........ RBA ...................')
+                                            console.log(req.body.accessoires)
+                                            for (var id in req.body.accessoires) {
+                                                const element = req.body.accessoires[id]
+                                                saves2.push('(' + element + ',' + results.insertId + ')'
+                                                )
+    
                                             }
-                                            console.log('................... SAVES 3..........................')
-                                            console.log(results3)
+                                            const query2 = saves2.join(',')
+                                            console.log('................... SAVES 2..........................')
+                                            console.log(insertOptionsHouseQuery + query2)
                                             console.log('....................................................')
+                                            connection.query(insertOptionsHouseQuery + query2, (errorIOHQ, results3) => {
+                                                if (errorIOHQ) {
+                                                    myErrors.push(errorIOHQ)
+                                                    throw errorIOHQ
+                                                }
+                                                console.log('................... SAVES 3..........................')
+                                                console.log(results3)
+                                                console.log('....................................................')
+                                                connection.commit((errorCommit, results) => {
+                                                    if (errorCommit) {
+                                                        console.log('................... SAVES OF..........................')
+                                                        connection.rollback(() => {
+                                                            return res.status(400).json({ error: "Format des features non respecté" })
+                                                        })
+                                                    }
+                                                    console.log('................... SREEEEEEEEE..........................')
+                                                    console.log(results)
+                                                    console.log('....................................................')
+                                                    return res.status(200).json({ message: "Maison créée avec succès" })
+                                                });
+                                            })
+                                        }
+                                        else{
                                             connection.commit((errorCommit, results) => {
                                                 if (errorCommit) {
-                                                    console.log('................... SAVES OF..........................')
+                                                    console.log('................... SAVES OF COMMIT..........................')
                                                     connection.rollback(() => {
                                                         return res.status(400).json({ error: "Format des features non respecté" })
                                                     })
                                                 }
-                                                console.log('................... SREEEEEEEEE..........................')
+                                                console.log('................... SREEEEEEEEE COMMIT..........................')
                                                 console.log(results)
                                                 console.log('....................................................')
                                                 return res.status(200).json({ message: "Maison créée avec succès" })
                                             });
-                                        })
+                                        }
+
                                     }
                                 })
                             }
@@ -252,7 +267,7 @@ exports.alterHouse = (req, res, next) => {
             /** ------------------------------------------------------------------------------------ */
             /** -------------------------------- FACADE ---------------------------------------- */
             if (req.file.facade != '' && req.file.facade.length > 0) {
-                fs.access(`${req.protocol}://${req.get('host')}/images/houses/${req.file.facade}`,
+                fs.access(`${req.protocol}://${req.get('host')}/${dirImg}${req.file.facade}`,
                     fs.constants.F_OK, (errfs) => {
                         if (errfs) {
                             return res.status(400).json({ error: errfs })
@@ -260,7 +275,7 @@ exports.alterHouse = (req, res, next) => {
                         else {
                             console.log('*/*/*/*/**')
                             console.log(req.file.facade)
-                            fs.unlink(`images/houses/${resultsf[0].url.split('/images/houses/')[1]}`, (errorUL) => {
+                            fs.unlink(`${dirImg}${resultsf[0].url.split('/'+dirImg)[1]}`, (errorUL) => {
                                 if (errorUL) {
                                     console.log('------------A')
                                     return res.status(500).json({ error: errorUL })
@@ -272,7 +287,7 @@ exports.alterHouse = (req, res, next) => {
                                         })
                                     }
                                     connection.query(`update houses set imageUrl = ?`,
-                                        [`${req.protocol}://${req.get('host')}/images/houses/${req.file.facade}`],
+                                        [`${req.file.facade}`],
                                         (error, results) => {
                                             if (error) {
                                                 console.log(error)
@@ -430,7 +445,7 @@ exports.alterHouse = (req, res, next) => {
                                         })
                                     }
 
-                                    fs.unlink(`images/houses/${el.url.split('/images/houses/')[1]}`, (error) => {
+                                    fs.unlink(`${dirImg}${el.url.split('/'+dirImg)[1]}`, (error) => {
                                         if (error) {
                                             console.log('------------A')
                                             connection.rollback(() => {
@@ -499,7 +514,7 @@ exports.alterHouse = (req, res, next) => {
                                     }
                                     console.log('.......el2')
                                     console.log(el2)
-                                    fs.unlink(`images/houses/${results[0].url.split('/images/houses/')[1]}`, (error) => {
+                                    fs.unlink(`${dirImg}${results[0].url.split('/'+dirImg)[1]}`, (error) => {
                                         if (error) {
                                             console.log('----------------------- FS 1  -----------------------')
                                             console.log(error)
@@ -511,7 +526,7 @@ exports.alterHouse = (req, res, next) => {
                                         console.log('.......keys')
                                         console.log(req.file[keys][j])
                                         const queryUrl = `update housefeatures set 
-                                            url = '${req.protocol}://${req.get('host')}/images/houses/${req.file[keys][j]}', 
+                                            url = '${req.file[keys][j]}', 
                                             area = ${el2.area} where id= ${parseInt(el2.id)} `
                                         connection.query(queryUrl, (error, results) => {
                                             if (error) {
@@ -550,7 +565,7 @@ exports.alterHouse = (req, res, next) => {
                         const url = req.file[keys]
                         pusha.push(url.map((value, index) => {
                             pusha2.push(`(?,(select id from typefeatures where features = "${keys}"),${parseInt(resultsf[0].id)},?)`)
-                            return [`${req.protocol}://${req.get('host')}/images/houses/${value}`, areas[index]]
+                            return [`${value}`, areas[index]]
                         }))
                     }
                 })
@@ -668,7 +683,7 @@ exports.getHouse = (req, res, next) => {
             queryOpts += ') as optionsfind'
 
             finalQuery += 'select p.id as idhouse,imageUrl,voisin,prix,superficie,nbsalon,nbchambre,nbcuisine,nbdouche,typehouse,cathouse,nom_ville,nom_quartier from (select * from (' + filtre + ') as house inner join ('
-                + queryOpts + ') as accessoires on house.id = accessoires.idhouse order by house.id desc limit 9 offset ?) as p ' +
+                + queryOpts + ') as accessoires on house.id = accessoires.idhouse order by house.id desc ) as p ' +
                 ` inner join typehouse on p.type = typehouse.id 
                             inner join cathouse on p.categorie = cathouse.id 
                             inner join villes on p.ville = villes.id 
@@ -678,45 +693,73 @@ exports.getHouse = (req, res, next) => {
             console.log('-------------------SORRY------------------------------')
         }
         else {
-            finalQuery = 'select p.id as idhouse,imageUrl,voisin,prix,superficie,nbsalon,nbchambre,nbcuisine,nbdouche,typehouse,cathouse,nom_ville,nom_quartier from (' + filtre + ' order by houses.id desc limit 9 offset ?' +
+            finalQuery = 'select p.id as idhouse,imageUrl,voisin,prix,superficie,nbsalon,nbchambre,nbcuisine,nbdouche,typehouse,cathouse,nom_ville,nom_quartier from (' + filtre + ' order by houses.id desc ' +
                 ') as p inner join typehouse on p.type = typehouse.id' +
                 ' inner join cathouse on p.categorie = cathouse.id inner join villes on p.ville = villes.id inner join quartiers on p.quartier = quartiers.id inner join pays on p.pays = pays.id'
             console.log(finalQuery)
-            console.log(offset)
         }
-        connection.query(finalQuery, [offset], (error, results) => {
+        // ---------------------------- Query ----------------------------//
+        connection.query(finalQuery, (error, results) => {
             if (error) {
                 return res.status(500).json({ error: error })
-                throw error
             }
-            return res.status(200).json({ datas: results });
+            const dataToReturn = results.slice(offset,offset+9)
+            return res.status(200).json({ datas: dataToReturn, total_rows : results.length});
         })
     }
     else {
         const getQuery = `SELECT houses.id AS idhouse, imageUrl, voisin, prix, superficie,
         nbsalon, nbchambre, nbcuisine, nbdouche,
-        typehouse, cathouse, nom_ville, nom_quartier, total_rows
+        typehouse, cathouse, nom_ville, nom_quartier
     FROM houses 
     INNER JOIN typehouse ON houses.type = typehouse.id 
     INNER JOIN cathouse ON houses.categorie = cathouse.id 
     INNER JOIN villes ON houses.ville = villes.id 
     INNER JOIN quartiers ON houses.quartier = quartiers.id 
     INNER JOIN pays ON houses.pays = pays.id
-    CROSS JOIN (SELECT COUNT(*) AS total_rows FROM houses) AS total
-    ORDER BY houses.id DESC 
-    LIMIT 9 OFFSET ?`
+    ORDER BY houses.id DESC`
         console.log('-8-8-8-8-88-8-8888-8--88-88-8-8-8888-8-8-8-8-88-8-8888-88-')
         console.log(getQuery)
         console.log('-8-8-8-8-88-8-8888-8--88-88-8-8-8888-8-8-8-8-88-8-8888-88-')
-        connection.query(getQuery, [parseInt(req.query.limit)], (error, results) => {
+        connection.query(getQuery, (error, results) => {
             if (error) {
                 return res.status(500).json({ error: error })
-                throw error
             }
-            console.log(results)
-            return res.status(200).json({ datas: results });
+            const offset = parseInt(req.query.limit)
+            const dataToReturn = results.slice(offset,offset+9)
+            return res.status(200).json({ datas: dataToReturn, total_rows : results.length});
         })
     }
+
+}
+exports.favoris= (req, res, next) => {
+  connection.query('select substring(likes,2) as likes from users where id = ?',[req.auth.userId], (error, results) => {
+    if (error) {
+      console.log(error)
+        return res.status(500).json({ error: error })
+    }
+    const likes = results[0].likes.split(",")
+    const getQuery = `SELECT houses.id AS idhouse, imageUrl, voisin, prix, superficie,
+    nbsalon, nbchambre, nbcuisine, nbdouche,
+    typehouse, cathouse, nom_ville, nom_quartier
+  FROM houses 
+  INNER JOIN typehouse ON houses.type = typehouse.id 
+  INNER JOIN cathouse ON houses.categorie = cathouse.id 
+  INNER JOIN villes ON houses.ville = villes.id 
+  INNER JOIN quartiers ON houses.quartier = quartiers.id 
+  INNER JOIN pays ON houses.pays = pays.id
+  where houses.id in (${new Array(likes.length).fill('?').join(',')})
+  ORDER BY houses.id DESC`
+  console.log('-----------------****************** FAVS')
+  console.log(new Array(likes.length).fill('(?,?)').join(','))
+    connection.query(getQuery,likes, (error, resultsf) => {
+        if (error) {
+          console.log(error)
+            return res.status(500).json({ error: error })
+        }
+        return res.status(200).json({ datas: resultsf});
+    })
+})
 
 }
 
@@ -765,23 +808,21 @@ exports.getOptions = (req, res, next) => {
 }
 exports.getAgentHouses = (req, res, next) => {
     const offset = req.query.offset
-    console.log('-*-*-*-*-**-**-*-*- ')
-    console.log(offset)
     const getQuery = `select houses.id as idhouse, userId, imageUrl,voisin,prix,superficie,
     nbsalon,nbchambre,nbcuisine,nbdouche,
-    typehouse,cathouse,nom_ville,nom_quartier from houses 
+    typehouse,cathouse,nom_ville,nom_quartier,total_rows from houses 
     inner join typehouse on houses.type = typehouse.id 
     inner join cathouse on houses.categorie = cathouse.id 
     inner join villes on houses.ville = villes.id 
     inner join quartiers on houses.quartier = quartiers.id 
     inner join pays on houses.pays = pays.id
     inner join vendor on vendor.idvendor = houses.userId
+    CROSS JOIN (SELECT COUNT(*) AS total_rows FROM houses where userId = ?) as tmp
     where houses.userId = ?
     order by houses.id desc limit 9 offset ?`
-    connection.query(getQuery, [parseInt(req.params.id), parseInt(offset)], (error, results) => {
+    connection.query(getQuery, [parseInt(req.params.id),parseInt(req.params.id), parseInt(offset)], (error, results) => {
         if (error) {
             return res.status(500).json({ error: error })
-            throw error
         }
         console.log(results)
         return res.status(200).json({ datas: results });
@@ -818,9 +859,6 @@ exports.getOneHouse = (req, res, next) => {
                 if (error) {
                     return res.status(500).json({ error: error })
                 }
-                console.log('...............-results-....................')
-                console.log({ datas: results, options: resultsOptions })
-                console.log('............................................')
                 return res.status(200).json({ datas: results, options: resultsOptions });
             })
         }
@@ -832,8 +870,6 @@ exports.getOneHouse = (req, res, next) => {
 
 exports.deleteHouse = (req, res, next) => {
     if (req.auth.userId) {
-        console.log('------------------pre ld ------------')
-        console.log(req.params.id)
         connection.beginTransaction((err) => {
             if (err) {
                 throw err;
@@ -859,9 +895,9 @@ exports.deleteHouse = (req, res, next) => {
                             })
                         }
                         console.log('----------------------- DELL 1  -----------------------')
-                        console.log(`images/houses/${results[0].imageUrl.split('/images/houses/')[1]}`)
+                        console.log(`${dirImg}${results[0].imageUrl.split('/'+dirImg)[1]}`)
                         console.log('----------------------- DELL 1 -----------------------')
-                        fs.unlink(`images/houses/${results[0].imageUrl.split('/images/houses/')[1]}`, (error) => {
+                        fs.unlink(`${dirImg}${results[0].imageUrl.split('/'+dirImg)[1]}`, (error) => {
                             if (error) {
                                 console.log('----------------------- ERRO 1  -----------------------')
                                 console.log(error)
@@ -875,9 +911,9 @@ exports.deleteHouse = (req, res, next) => {
 
                         Object.values(results).forEach(element => {
                             console.log('----------------------- DELL 2  -----------------------')
-                            console.log(`images/houses/${element.url.split('/images/houses/')[1]}`)
+                            console.log(`${dirImg}${element.url.split('/'+dirImg)[1]}`)
                             console.log('----------------------- DELL 2 -----------------------')
-                            fs.unlink(`images/houses/${element.url.split('/images/houses/')[1]}`, (error) => {
+                            fs.unlink(`${dirImg}${element.url.split('/'+dirImg)[1]}`, (error) => {
                                 if (error) {
                                     console.log('----------------------- ERRO 2  -----------------------')
                                     console.log(error)
@@ -956,9 +992,11 @@ function parseDateOrString(input) {
     } else {
         parsedValue = parsedDate
     }
+
     if (parsedValue instanceof Date) {
-        return true
+       return true
     } else {
         return false
     }
+
 }

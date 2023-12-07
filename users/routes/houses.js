@@ -8,6 +8,7 @@ const getFiles = require('../middlewares/getfiles')
 
 router.post('/',auth,multer,getFiles,houseValidator, housesCtrl.postHouse);
 router.get('/', housesCtrl.getHouse);
+router.get('/favoris',auth,housesCtrl.favoris);
 router.get('/options',housesCtrl.getOptions);
 router.get('/vendor',auth,housesCtrl.getHouseVendor);
 router.get('/:id',housesCtrl.getOneHouse);

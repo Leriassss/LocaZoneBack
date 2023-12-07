@@ -7,6 +7,7 @@ const getFiles = require('../middlewares/register_getfiles')
 
 router.get('/', agentsCtrl.getAgents);
 router.get('/infos', auth, agentsCtrl.getAgentInfos);
+router.get('/planning/:id', agentsCtrl.getAgentPlanning);
 router.get('/personal', auth, agentsCtrl.getPersonalInfos);
 router.post('/register', auth, multer,getFiles,agentsCtrl.register);
 

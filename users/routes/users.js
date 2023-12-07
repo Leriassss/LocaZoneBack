@@ -8,5 +8,6 @@ router.post('/signin', usersCtrl.signin);
 router.post('/signup', usersValidators, usersCtrl.signup);
 router.post('/likes/:id', auth, usersCtrl.addLike);
 router.get('/', usersCtrl.unicity);
+router.get('/dashboard',auth, usersCtrl.dashboard);
 
 module.exports = router;

@@ -33,9 +33,6 @@ module.exports = (req, res, next) => {
                         vendor: results[0].role,
                     };
                     req.body.auth = results[0].id
-                    console.log('-----------------Auth Vendor --------------------------')
-                    console.log(req.params)
-                    console.log('-------------------------------------------')
                     next();
                 }
             }

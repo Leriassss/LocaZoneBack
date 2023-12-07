@@ -136,3 +136,55 @@ exports.addLike = (req, res, next) => {
     })
 
 }
+
+exports.dashboard = (req, res, next) => {
+    const getQuery = 'select pseudo, tel, email from users where id = ?'
+    connection.query(getQuery, [req.auth.userId], (error, results) => {
+        if(error){
+            res.status(500).json({ error : error})
+        }
+        return res.status(200).json({data : results});
+    })
+ };
+
+
+
+
+function parseDateOrString(input) {
+    const parsedDate = new Date(input);
+    let parsedValue = null
+    if (isNaN(parsedDate)) {
+        parsedValue = input
+    } else {
+        parsedValue = parsedDate
+    }
+    console.log(parsedDate)
+    console.log(parsedDate.getTime())
+    if (parsedValue instanceof Date) {
+        if (parsedDate.getTime() < new Date().getTime()) {
+            return false
+        } else {
+            return true
+        }
+    } else {
+        return false
+    }
+
+}
+
+function parseDate(input) {
+    const parsedDate = new Date(input);
+    let parsedValue = null
+    if (isNaN(parsedDate)) {
+        parsedValue = input
+    } else {
+        parsedValue = parsedDate
+    }
+
+    if (parsedValue instanceof Date) {
+       return true
+    } else {
+        return false
+    }
+
+}

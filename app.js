@@ -1,4 +1,5 @@
 const express = require('express');
+const { rateLimit } = require('express-rate-limit');
 require('dotenv').config();
 
 const mongoose = require('mongoose');
@@ -14,6 +15,13 @@ const mongoose = require('mongoose');
   .then(() => console.log('Connexion à MongoDB réussie !'))
   .catch(() => console.log('Connexion à MongoDB échouée !'));*/
 
+  const apiLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    limit: 100, // Limit each IP to 100 requests per `window` (here, per 15 minutes)
+    standardHeaders: 'draft-7', // Set `RateLimit` and `RateLimit-Policy` headers
+    legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+    // store: ... , // Use an external store for more precise rate limiting
+  })
 
 const app = express();
 app.use(express.json());
@@ -25,7 +33,7 @@ app.use((req, res, next) => {
   next();
 });
 
-
+/*app.use(apiLimiter)*/
 const path = require('path');
 app.use('/users/images', express.static(path.join(__dirname, 'users/images')));
 const stuffRoutes = require('./users/routes/stuff');
@@ -42,6 +50,10 @@ const agentsRoute = require('./users/routes/agents');
 app.use('/agents', agentsRoute);
 const spRoute = require('./users/routes/specials');
 app.use('/options', spRoute);
+const visitesRoute = require('./users/routes/visites');
+app.use('/visites', visitesRoute);
+const FiltresRoute = require('./users/routes/filtres');
+app.use('/filtres', FiltresRoute);
 const mailingRoute = require('./users/routes/mailing');
 app.use('/mailing', mailingRoute);
 const messageRoute = require('./users/routes/messages');
